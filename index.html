@@ -292,7 +292,7 @@ h3{
 
     <div class="title-block">
 
-    <img src="sail-logo.svg"
+    <img src="sail-logo.png"
          alt="SAIL Logo"
          class="sail-logo">
 
@@ -307,7 +307,7 @@ h3{
 </div>
 
     <button class="refresh-btn"
-            onclick="refreshFromCloudWithAnimation()"
+           onclick="refreshCloudWithAnimation()"
             title="Refresh">
 
       🔄
@@ -320,7 +320,11 @@ h3{
 <main>
   <div class="toolbar">
    
-        <input class="search" id="searchInput" type="search" placeholder="Search staff no or name">
+        <input class="search"
+       id="searchInput"
+       type="search"
+       placeholder="Search staff no or name"
+       oninput="handleSearch()">
   </div>
 
   <section class="kpis" id="kpis"></section>
@@ -622,11 +626,31 @@ function openProfile(staffValue){
       ${detail("Medical Due", med ? fmt(med.due) : "")}
     </div>
     <h3>Training History</h3>
-    <div class="history">${history(tr.map(t => `${safe(t.name)}<br><span class="row-meta">${fmt(t.date)}</span>`))}</div>
+    <div class="history">${
+
+
+history(tr.map(t =>
+
+`${safe(t.name)}
+
+<br>
+
+<span class="row-meta">
+${safe(t.duration || '')} ${safe(t.unit || '')}
+</span>
+
+<br>
+
+<span class="row-meta">
+${fmt(t.date)}
+</span>`
+
+))}</div>
     <h3>Medical History</h3>
     <div class="history">${history(md.map(m => `Medical: ${fmt(m.date)}<br><span class="row-meta">Due: ${fmt(m.due)}</span>`))}</div>
   `;
   document.getElementById("profile").classList.add("open");
+document.getElementById("searchInput").value = "";
 }
 
 function detail(label,value){
@@ -654,8 +678,48 @@ async function refreshCloudWithAnimation(){
 
 }
 
-document.getElementById("searchInput").addEventListener("input", renderLists);
+const searchBox =
+document.getElementById("searchInput");
 
+function handleSearch(){
+
+    if(!snapshot || !snapshot.employees){
+        return;
+    }
+
+    let q = searchBox.value.trim();
+
+    if(!q) return;
+
+    let emp =
+    snapshot.employees.find(
+        e => String(e.staff).trim() === q
+    );
+
+    if(emp){
+
+        openProfile(
+            encodeURIComponent(emp.staff)
+        );
+
+    }
+
+}
+
+searchBox.addEventListener(
+    "input",
+    handleSearch
+);
+
+searchBox.addEventListener(
+    "keyup",
+    handleSearch
+);
+
+searchBox.addEventListener(
+    "search",
+    handleSearch
+);
 
 document.getElementById("closeProfile").addEventListener("click", () => {
   document.getElementById("profile").classList.remove("open");
