@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -320,11 +320,10 @@ h3{
 <main>
   <div class="toolbar">
    
-        <input class="search"
+  <input class="search"
        id="searchInput"
        type="search"
-       placeholder="Search staff no or name"
-       oninput="handleSearch()">
+       placeholder="Search staff no or name">
   </div>
 
   <section class="kpis" id="kpis"></section>
@@ -335,6 +334,8 @@ h3{
   <section class="section" id="due"></section>
   <section class="section" id="overdue"></section>
   <section class="section" id="nomedical"></section>
+
+<section class="section" id="searchResults"></section>
 </main>
 
 <aside class="profile" id="profile">
@@ -566,15 +567,125 @@ function staffListFor(tab){
   }
 }
 function filteredStaff(staffList){
-  let q = document.getElementById("searchInput").value.trim().toLowerCase();
+
+  let q =
+  document.getElementById("searchInput")
+  .value
+  .trim()
+  .toLowerCase();
+
   if(!q) return staffList;
+
   return staffList.filter(staff => {
+
     let e = getEmployee(staff);
-    return String(staff).toLowerCase().includes(q) ||
-      String(e?.name || "").toLowerCase().includes(q);
+
+    let staffNo =
+    String(staff || "")
+    .toLowerCase();
+
+    let empName =
+    String(e?.name || "")
+    .toLowerCase();
+
+    return (
+      staffNo.includes(q) ||
+      empName.includes(q)
+    );
+
   });
+
 }
 
+
+
+function searchAllEmployees(){
+
+  let q =
+  document.getElementById("searchInput")
+  .value
+  .trim()
+  .toLowerCase();
+
+  if(!q) return [];
+
+  return (snapshot?.employees || [])
+    .filter(emp => {
+
+      let staffNo =
+      String(emp.staff || "")
+      .toLowerCase();
+
+      let empName =
+      String(emp.name || "")
+      .toLowerCase();
+
+      return (
+        staffNo.includes(q) ||
+        empName.includes(q)
+      );
+
+    });
+
+}
+
+
+function renderSearchResults(){
+
+  let results =
+  searchAllEmployees();
+
+  let root =
+  document.getElementById(
+      "searchResults"
+  );
+
+  if(!results.length){
+
+      root.innerHTML =
+      '<div class="empty">No records found</div>';
+
+      return;
+  }
+
+root.innerHTML =
+
+'<div style="margin-bottom:10px;font-weight:bold;">' +
+
+'Search Results (' +
+results.length +
+' found)' +
+
+'</div>' +
+
+'<div class="list">' +
+
+results.map(emp => `
+
+<button class="row"
+        type="button"
+        onclick="openProfile('${safeAttr(emp.staff)}')">
+
+  <div class="row-title">
+
+    ${safe(emp.staff)} -
+    ${safe(emp.name)}
+
+  </div>
+
+  <div class="row-meta">
+
+    ${safe(emp.designation || "")}
+
+  </div>
+
+</button>
+
+`).join("")
+
++ '</div>';
+
+}
 function renderLists(){
   ["active","retiring","due","overdue","nomedical"].forEach(tab => {
     let root = document.getElementById(tab);
@@ -651,6 +762,14 @@ ${fmt(t.date)}
   `;
   document.getElementById("profile").classList.add("open");
 document.getElementById("searchInput").value = "";
+
+document.getElementById("searchResults").innerHTML = "";
+
+document
+  .querySelectorAll(".section")
+  .forEach(section =>
+      section.classList.remove("active")
+  );
 }
 
 function detail(label,value){
@@ -677,49 +796,34 @@ async function refreshCloudWithAnimation(){
     },500);
 
 }
+document.getElementById("searchInput")
+.addEventListener("input", () => {
 
-const searchBox =
-document.getElementById("searchInput");
+    renderLists();
 
-function handleSearch(){
+    let q =
+    document.getElementById("searchInput")
+    .value
+    .trim();
 
-    if(!snapshot || !snapshot.employees){
-        return;
+    if(q){
+
+        renderSearchResults();
+
+        showSection("searchResults");
+
+    }else{
+
+        document
+          .querySelectorAll(".section")
+          .forEach(section =>
+              section.classList.remove("active")
+          );
+
     }
 
-    let q = searchBox.value.trim();
+});
 
-    if(!q) return;
-
-    let emp =
-    snapshot.employees.find(
-        e => String(e.staff).trim() === q
-    );
-
-    if(emp){
-
-        openProfile(
-            encodeURIComponent(emp.staff)
-        );
-
-    }
-
-}
-
-searchBox.addEventListener(
-    "input",
-    handleSearch
-);
-
-searchBox.addEventListener(
-    "keyup",
-    handleSearch
-);
-
-searchBox.addEventListener(
-    "search",
-    handleSearch
-);
 
 document.getElementById("closeProfile").addEventListener("click", () => {
   document.getElementById("profile").classList.remove("open");
